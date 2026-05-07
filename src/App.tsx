@@ -1388,7 +1388,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                 </div>
                 <span style={{ color: "#7d8ea5", fontSize: 12 }}>
                   Dividend overweight +{fmt(Math.abs(divGap))}% · Target D:
-                  {targetWeightTotals.Dividend}% / G:{targetWeightTotals.Growth}%
+                  {fmt(targetWeightTotals.Dividend, 2)}% / G:{fmt(targetWeightTotals.Growth, 2)}%
                 </span>
               </div>
             ) : (
@@ -1451,13 +1451,13 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                 {
                   label: "Dividend Value",
                   value: `฿${fmtB(divValue)}`,
-                  sub: `${fmt(divPct)}% (Target ${targetWeightTotals.Dividend}%)`,
+                  sub: `${fmt(divPct)}% (Target ${fmt(targetWeightTotals.Dividend, 2)}%)`,
                   accent: "#34d399",
                 },
                 {
                   label: "Growth Value",
                   value: `฿${fmtB(growValue)}`,
-                  sub: `${fmt(growPct)}% (Target ${targetWeightTotals.Growth}%)`,
+                  sub: `${fmt(growPct)}% (Target ${fmt(targetWeightTotals.Growth, 2)}%)`,
                   accent: "#60a5fa",
                 },
                 {
@@ -2664,7 +2664,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                       growGap < -5
                         ? `🟢 Buy Bias — increase Growth from ${fmt(
                             growPct
-                          )}% to ${targetWeightTotals.Growth}%`
+                          )}% to ${fmt(targetWeightTotals.Growth, 2)}%`
                         : growGap > 5
                         ? `⚠️ Trim Bias — Growth exceeds target by ${fmt(
                             growGap
@@ -3212,7 +3212,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                                 letterSpacing: "0.01em",
                               }}
                             >
-                              {fmtPct(h.targetWeight, 0)}
+                              {fmtPct(h.targetWeight, 2)}
                             </td>
                             <td
                               style={{
