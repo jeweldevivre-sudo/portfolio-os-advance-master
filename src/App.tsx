@@ -21,7 +21,7 @@ import {
 } from "recharts";
 
 const SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbz6fmUZynfLq_CTcuCf_G0of35etHtScYXl8Ue8LCi-SdW6V31L_K_BykgtILM3YNKr/exec";
+  "https://script.google.com/macros/s/AKfycbwjiEzduWoUjVdZZ7sGAoGbYrZm_qpvjHnDB-a4GpiBn5NB3mvf6Y1pLCguEieYJZoEYA/exec";
 
 const DEFAULT_TARGETS = {
   totalWealth: 5000000,
@@ -354,7 +354,10 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
             source: type,
             units: h.units ?? h.currentUnits ?? "",
             avgCost: h.avgCost ?? "",
-            targetWeight: h.targetWeight ?? "",
+            targetWeight:
+              h.targetWeight === "" || h.targetWeight === undefined || h.targetWeight === null
+                ? ""
+                : Number(targetPct(h.targetWeight)).toFixed(2),
             price: h.price ?? h.marketPrice ?? "",
           };
         });
@@ -478,9 +481,6 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
   const growPct = equityValue > 0 ? (growValue / equityValue) * 100 : 0;
 
   const targetWeightTotals = useMemo(() => {
-    // Advance Service: target allocation is user-defined per holding.
-    // Do not start from the default 40/60 when the user already has targets,
-    // otherwise totals become duplicated (example: 40 + user dividend targets).
     const totals = { Dividend: 0, Growth: 0 };
 
     holdings.forEach((h) => {
@@ -495,22 +495,6 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
     const hasUserTarget = holdings.some((h) => targetPct(h.targetWeight) > 0);
     return hasUserTarget ? totals : { ...DEFAULT_TARGET_ALLOCATION };
   }, [holdings]);
-
-  const totalTargetAllocation =
-    targetWeightTotals.Dividend + targetWeightTotals.Growth;
-
-  const allocationHealthText =
-    Math.abs(totalTargetAllocation - 100) <= 0.5
-      ? "Your target allocation is balanced around 100%."
-      : totalTargetAllocation > 100
-      ? `Your target allocation is ${fmt(
-          totalTargetAllocation,
-          0
-        )}%. You may want to bring it closer to 100%.`
-      : `Your target allocation is ${fmt(
-          totalTargetAllocation,
-          0
-        )}%. Some allocation is still open for your plan.`;
 
   const divGap = divPct - targetWeightTotals.Dividend;
   const growGap = growPct - targetWeightTotals.Growth;
@@ -3198,21 +3182,23 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                                 width="72px"
                               />
                             </td>
-                            <td
-                              style={{
-                                padding: "6px 10px",
-                                textAlign: "right",
-                                fontSize: 12,
-                                fontFamily: "'DM Mono', monospace",
-                                color:
-                                  targetPct(h.targetWeight) > 0
-                                    ? "#60a5fa"
-                                    : "#64748b",
-                                fontWeight: 800,
-                                letterSpacing: "0.01em",
-                              }}
-                            >
-                              {fmtPct(h.targetWeight, 2)}
+                            <td style={{ padding: "4px 5px", textAlign: "right" }}>
+                              <EInput
+                                val={h.targetWeight}
+                                onChange={(v) => updateHolding(i, "targetWeight", v)}
+                                placeholder="0.00"
+                                width="78px"
+                              />
+                              <span
+                                style={{
+                                  marginLeft: 6,
+                                  color: targetPct(h.targetWeight) > 0 ? "#60a5fa" : "#64748b",
+                                  fontSize: 12,
+                                  fontWeight: 800,
+                                }}
+                              >
+                                %
+                              </span>
                             </td>
                             <td
                               style={{
@@ -3442,28 +3428,6 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                       </div>
                     );
                   })}
-                </div>
-
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    background: "#080e1c",
-                    border: `1px solid ${
-                      Math.abs(totalTargetAllocation - 100) <= 0.5
-                        ? "#10b98155"
-                        : "#f59e0b55"
-                    }`,
-                    color:
-                      Math.abs(totalTargetAllocation - 100) <= 0.5
-                        ? "#86efac"
-                        : "#fbbf24",
-                    fontSize: 11,
-                    lineHeight: 1.45,
-                  }}
-                >
-                  {allocationHealthText}
                 </div>
               </div>
 
