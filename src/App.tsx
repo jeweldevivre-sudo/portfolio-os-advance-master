@@ -478,15 +478,39 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
   const growPct = equityValue > 0 ? (growValue / equityValue) * 100 : 0;
 
   const targetWeightTotals = useMemo(() => {
-    const totals = { ...DEFAULT_TARGET_ALLOCATION };
+    // Advance Service: target allocation is user-defined per holding.
+    // Do not start from the default 40/60 when the user already has targets,
+    // otherwise totals become duplicated (example: 40 + user dividend targets).
+    const totals = { Dividend: 0, Growth: 0 };
+
     holdings.forEach((h) => {
       const type = normalizeHoldingType(h.type);
       const weight = targetPct(h.targetWeight);
-      if (type === "Dividend" || type === "Growth") totals[type] += weight;
+
+      if (type === "Dividend" || type === "Growth") {
+        totals[type] += weight;
+      }
     });
+
     const hasUserTarget = holdings.some((h) => targetPct(h.targetWeight) > 0);
     return hasUserTarget ? totals : { ...DEFAULT_TARGET_ALLOCATION };
   }, [holdings]);
+
+  const totalTargetAllocation =
+    targetWeightTotals.Dividend + targetWeightTotals.Growth;
+
+  const allocationHealthText =
+    Math.abs(totalTargetAllocation - 100) <= 0.5
+      ? "Your target allocation is balanced around 100%."
+      : totalTargetAllocation > 100
+      ? `Your target allocation is ${fmt(
+          totalTargetAllocation,
+          0
+        )}%. You may want to bring it closer to 100%.`
+      : `Your target allocation is ${fmt(
+          totalTargetAllocation,
+          0
+        )}%. Some allocation is still open for your plan.`;
 
   const divGap = divPct - targetWeightTotals.Dividend;
   const growGap = growPct - targetWeightTotals.Growth;
@@ -3418,6 +3442,28 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                       </div>
                     );
                   })}
+                </div>
+
+                <div
+                  style={{
+                    marginTop: 12,
+                    padding: "10px 12px",
+                    borderRadius: 10,
+                    background: "#080e1c",
+                    border: `1px solid ${
+                      Math.abs(totalTargetAllocation - 100) <= 0.5
+                        ? "#10b98155"
+                        : "#f59e0b55"
+                    }`,
+                    color:
+                      Math.abs(totalTargetAllocation - 100) <= 0.5
+                        ? "#86efac"
+                        : "#fbbf24",
+                    fontSize: 11,
+                    lineHeight: 1.45,
+                  }}
+                >
+                  {allocationHealthText}
                 </div>
               </div>
 
