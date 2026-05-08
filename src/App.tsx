@@ -106,10 +106,9 @@ const fmtB = (n: any) =>
 const num = (v: any) => parseFloat(String(v).replace(/,/g, "")) || 0;
 
 const targetPct = (v: any) => {
-  // Advance Service: target weight is edited as a normal percent number.
-  // Example: 10.00 means 10.00%, not 0.10 = 10.00%.
   const n = num(v);
-  return isNaN(n) ? 0 : n;
+  if (!n) return 0;
+  return n <= 1 ? n * 100 : n;
 };
 
 const fmtPct = (v: any, d: number = 0) => {
@@ -817,7 +816,10 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
       const portfolioPayload = {
         action: "savePortfolio",
         portfolio: holdings
-          .filter((h) => String(h.symbol || "").trim())
+          .filter((h) => {
+            const symbol = String(h.symbol || "").trim().toUpperCase();
+            return symbol && symbol !== "SYMBOL";
+          })
           .map((h) => ({
             assetCode: String(h.symbol || "")
               .trim()
@@ -827,11 +829,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
             osType: normalizeHoldingType(h.type),
             units: h.units === "" ? "" : Number(h.units),
             avgCost: h.avgCost === "" ? "" : Number(h.avgCost),
-            // Send as a percent string so 0.10 is saved as 0.10%, not 10.00%.
-            targetWeight:
-              h.targetWeight === "" || h.targetWeight === undefined || h.targetWeight === null
-                ? ""
-                : `${Number(targetPct(h.targetWeight)).toFixed(2)}%`,
+            targetWeight: h.targetWeight === "" ? "" : targetPct(h.targetWeight),
             note: h.note || "",
           })),
       };
@@ -1017,7 +1015,8 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
       if (type === "Growth") totals.Growth += weight;
     });
 
-    return totals;
+    const hasUserTarget = holdings.some((h) => targetPct(h.targetWeight) > 0);
+    return hasUserTarget ? totals : { Dividend: 40, Growth: 60 };
   }, [holdings]);
 
   const targetCoverageCards = [
@@ -3321,13 +3320,26 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              <EInput
-                                val={h.targetWeight}
-                                onChange={(v) => updateHolding(i, "targetWeight", v)}
-                                placeholder="0.00"
-                                width="72px"
-                              />
-                              <span style={{ marginLeft: 6, color: "#60a5fa" }}>%</span>
+                              <span
+                                style={{
+                                  display: "inline-flex",
+                                  alignItems: "center",
+                                  justifyContent: "flex-end",
+                                  gap: 5,
+                                }}
+                              >
+                                <EInput
+                                  val={
+                                    h.targetWeight === "" || h.targetWeight === null || h.targetWeight === undefined
+                                      ? ""
+                                      : fmt(targetPct(h.targetWeight), 2)
+                                  }
+                                  onChange={(v) => updateHolding(i, "targetWeight", v)}
+                                  placeholder="0.00"
+                                  width="70px"
+                                />
+                                <span style={{ color: "#60a5fa", fontWeight: 800 }}>%</span>
+                              </span>
                             </td>
                             <td
                               style={{
