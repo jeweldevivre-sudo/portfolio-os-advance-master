@@ -21,7 +21,7 @@ import {
 } from "recharts";
 
 const SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycbzBM-6Tlnw72JEXND9Igw8Xnc0ho2F5qC_X_5dcBD5ksJhMBCwT-xlJWQ88xlrBaemv/exec";
+  "https://script.google.com/macros/s/AKfycbz6fmUZynfLq_CTcuCf_G0of35etHtScYXl8Ue8LCi-SdW6V31L_K_BykgtILM3YNKr/exec";
 
 const DEFAULT_TARGETS = {
   totalWealth: 5000000,
@@ -106,9 +106,10 @@ const fmtB = (n: any) =>
 const num = (v: any) => parseFloat(String(v).replace(/,/g, "")) || 0;
 
 const targetPct = (v: any) => {
+  // Advance Service: target weight is edited as a normal percent number.
+  // Example: 10.00 means 10.00%, not 0.10 = 10.00%.
   const n = num(v);
-  if (!n) return 0;
-  return n <= 1 ? n * 100 : n;
+  return isNaN(n) ? 0 : n;
 };
 
 const fmtPct = (v: any, d: number = 0) => {
@@ -816,10 +817,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
       const portfolioPayload = {
         action: "savePortfolio",
         portfolio: holdings
-          .filter((h) => {
-            const symbol = String(h.symbol || "").trim().toUpperCase();
-            return symbol && symbol !== "SYMBOL";
-          })
+          .filter((h) => String(h.symbol || "").trim())
           .map((h) => ({
             assetCode: String(h.symbol || "")
               .trim()
@@ -829,7 +827,11 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
             osType: normalizeHoldingType(h.type),
             units: h.units === "" ? "" : Number(h.units),
             avgCost: h.avgCost === "" ? "" : Number(h.avgCost),
-            targetWeight: h.targetWeight === "" ? "" : targetPct(h.targetWeight),
+            // Send as a percent string so 0.10 is saved as 0.10%, not 10.00%.
+            targetWeight:
+              h.targetWeight === "" || h.targetWeight === undefined || h.targetWeight === null
+                ? ""
+                : `${Number(targetPct(h.targetWeight)).toFixed(2)}%`,
             note: h.note || "",
           })),
       };
@@ -1015,8 +1017,7 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
       if (type === "Growth") totals.Growth += weight;
     });
 
-    const hasUserTarget = holdings.some((h) => targetPct(h.targetWeight) > 0);
-    return hasUserTarget ? totals : { Dividend: 40, Growth: 60 };
+    return totals;
   }, [holdings]);
 
   const targetCoverageCards = [
@@ -3320,26 +3321,13 @@ const [deletedPortfolioSymbols, setDeletedPortfolioSymbols] = useState<string[]>
                                 whiteSpace: "nowrap",
                               }}
                             >
-                              <span
-                                style={{
-                                  display: "inline-flex",
-                                  alignItems: "center",
-                                  justifyContent: "flex-end",
-                                  gap: 5,
-                                }}
-                              >
-                                <EInput
-                                  val={
-                                    h.targetWeight === "" || h.targetWeight === null || h.targetWeight === undefined
-                                      ? ""
-                                      : fmt(targetPct(h.targetWeight), 2)
-                                  }
-                                  onChange={(v) => updateHolding(i, "targetWeight", v)}
-                                  placeholder="0.00"
-                                  width="70px"
-                                />
-                                <span style={{ color: "#60a5fa", fontWeight: 800 }}>%</span>
-                              </span>
+                              <EInput
+                                val={h.targetWeight}
+                                onChange={(v) => updateHolding(i, "targetWeight", v)}
+                                placeholder="0.00"
+                                width="72px"
+                              />
+                              <span style={{ marginLeft: 6, color: "#60a5fa" }}>%</span>
                             </td>
                             <td
                               style={{
